@@ -55,7 +55,26 @@ export function useWorkoutHistory() {
     return history.filter(h => h.date >= weekAgo).length
   }
 
-  return { history, logWorkout, isLoggedToday, getHistoryForDay, getLastWorkout, getWeekCount }
+  const getStreak = () => {
+    if (history.length === 0) return 0
+    const uniqueDates = [...new Set(history.map(h => h.date))].sort().reverse()
+    const today = todayStr()
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0
+    let streak = 1
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const prev = new Date(uniqueDates[i - 1] + 'T00:00:00')
+      const curr = new Date(uniqueDates[i] + 'T00:00:00')
+      if ((prev - curr) / 86400000 === 1) {
+        streak++
+      } else {
+        break
+      }
+    }
+    return streak
+  }
+
+  return { history, logWorkout, isLoggedToday, getHistoryForDay, getLastWorkout, getWeekCount, getStreak }
 }
 
 function collectCompletedSets(dayId, exerciseCount) {

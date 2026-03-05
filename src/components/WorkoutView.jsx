@@ -3,8 +3,10 @@ import { DAYS } from '../data/workouts'
 import DaySelector from './DaySelector'
 import ExerciseCard from './ExerciseCard'
 import TipsAccordion from './TipsAccordion'
+import WorkoutSummaryCard from './WorkoutSummaryCard'
 import { useWorkoutHistory, collectCompletedSets } from '../hooks/useWorkoutHistory'
 import { useWeightLog } from '../hooks/useWeightLog'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { parseRestSeconds } from '../utils/parseRest'
 import { vibrate, PATTERNS } from '../utils/haptics'
 
@@ -18,15 +20,20 @@ export default function WorkoutView({
   sessionTimer, restTimer, onCheckPRs,
 }) {
   const [expandedEx, setExpandedEx] = useState(null)
-  const { logWorkout, isLoggedToday } = useWorkoutHistory()
+  const { history, logWorkout, isLoggedToday, getLastWorkout, getStreak } = useWorkoutHistory()
   const { getWeight, setWeight } = useWeightLog()
+  const wakeLock = useWakeLock()
   const [justLogged, setJustLogged] = useState(false)
   const [swaps, setSwaps] = useState({})
+  const [showSummary, setShowSummary] = useState(false)
 
   // Weight state for each exercise
   const [weights, setWeights] = useState(() =>
     day.exercises.map((_, i) => getWeight(activeId, i))
   )
+
+  // Last workout for "last session" display
+  const lastWorkout = useMemo(() => getLastWorkout(activeId), [activeId, history])
 
   const handleWeightChange = useCallback((idx, val) => {
     setWeights(prev => {
@@ -41,7 +48,6 @@ export default function WorkoutView({
     onChangeDay(id)
     setExpandedEx(null)
     setSwaps({})
-    // Reload weights for new day
     const newDay = DAYS.find(d => d.id === id)
     if (newDay) {
       setWeights(newDay.exercises.map((_, i) => getWeight(id, i)))
@@ -59,11 +65,10 @@ export default function WorkoutView({
   const logged = isLoggedToday(activeId)
 
   const handleSetComplete = useCallback(() => {
-    // Start session timer on first set
     if (sessionTimer && !sessionTimer.isRunning) {
       sessionTimer.start()
+      wakeLock.acquire()
     }
-    // Start rest timer with the current exercise's rest time
     if (restTimer && expandedEx !== null) {
       const ex = day.exercises[expandedEx]
       if (ex) {
@@ -71,7 +76,7 @@ export default function WorkoutView({
         restTimer.start(seconds)
       }
     }
-  }, [sessionTimer, restTimer, expandedEx, day.exercises])
+  }, [sessionTimer, restTimer, expandedEx, day.exercises, wakeLock])
 
   const handleSwap = useCallback((idx) => {
     const ex = day.exercises[idx]
@@ -96,6 +101,8 @@ export default function WorkoutView({
     sessionTimer?.stop()
     vibrate(PATTERNS.finish)
     onCheckPRs?.(activeId, day.exercises, weightValues)
+    wakeLock.release()
+    setShowSummary(true)
     setJustLogged(true)
     setTimeout(() => setJustLogged(false), 3000)
   }
@@ -162,6 +169,8 @@ export default function WorkoutView({
             onSetComplete={handleSetComplete}
             onSwap={handleSwap}
             swappedName={swaps[i] !== undefined ? ex.swaps[swaps[i]] : null}
+            lastExercise={lastWorkout?.exercises?.[i] || null}
+            history={history}
           />
         ))}
       </div>
@@ -175,7 +184,7 @@ export default function WorkoutView({
           disabled={logged || justLogged}
         >
           {logged || justLogged
-            ? '\u2705 Workout Logged!'
+            ? `\u2705 Workout #${history.length} Logged!`
             : 'Finish Workout'
           }
           {!logged && !justLogged && (
@@ -185,6 +194,24 @@ export default function WorkoutView({
       )}
 
       <TipsAccordion accent={day.accent} />
+
+      {/* Shareable summary card */}
+      {showSummary && (
+        <WorkoutSummaryCard
+          dayLabel={day.label}
+          date={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          duration={sessionTimer?.elapsed || 0}
+          exercises={day.exercises.map((ex, i) => ({
+            name: ex.name,
+            weight: weights[i] || 0,
+          }))}
+          totalSets={totalSets}
+          doneSets={doneSets}
+          streak={getStreak()}
+          accent={day.accent}
+          onClose={() => setShowSummary(false)}
+        />
+      )}
     </section>
   )
 }

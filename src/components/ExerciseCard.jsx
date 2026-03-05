@@ -2,13 +2,16 @@ import { memo, useState } from 'react'
 import SetTracker from './SetTracker'
 import WarmUp from './WarmUp'
 import PlateCalculator from './PlateCalculator'
+import ExerciseHistory from './ExerciseHistory'
 
 const ExerciseCard = memo(function ExerciseCard({
   ex, index, accent, dayId, expanded, onToggle, onDemo,
   weight, onWeightChange, onSetComplete, onSwap, swappedName,
+  lastExercise, history,
 }) {
   const [showWarmUp, setShowWarmUp] = useState(false)
   const [showPlateCalc, setShowPlateCalc] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const displayName = swappedName || ex.name
   const isSmith = ex.equipment?.includes('Smith')
@@ -79,6 +82,16 @@ const ExerciseCard = memo(function ExerciseCard({
             />
           </div>
 
+          {/* Last session info */}
+          {lastExercise && lastExercise.weight > 0 && (
+            <div className="exercise-card__last-session" style={{ color: `${accent}99` }}>
+              Last: {lastExercise.weight} lbs &times; {lastExercise.reps}
+              {lastExercise.setsCompleted > 0 && (
+                <span> &middot; {lastExercise.setsCompleted}/{lastExercise.setsTotal} sets</span>
+              )}
+            </div>
+          )}
+
           {/* Action buttons row */}
           <div className="exercise-card__actions">
             {ex.compound && (
@@ -108,6 +121,13 @@ const ExerciseCard = memo(function ExerciseCard({
                 Swap
               </button>
             )}
+            <button
+              className="exercise-card__action-btn"
+              style={{ color: accent, borderColor: `${accent}30` }}
+              onClick={e => { e.stopPropagation(); setShowHistory(!showHistory) }}
+            >
+              {showHistory ? 'Hide' : 'History'}
+            </button>
           </div>
 
           {/* Warm-up protocol */}
@@ -126,6 +146,16 @@ const ExerciseCard = memo(function ExerciseCard({
               weight={weight}
               accent={accent}
               onClose={() => setShowPlateCalc(false)}
+            />
+          )}
+
+          {/* Per-exercise history chart */}
+          {showHistory && (
+            <ExerciseHistory
+              history={history}
+              dayId={dayId}
+              exerciseIndex={index}
+              accent={accent}
             />
           )}
 

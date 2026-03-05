@@ -1,10 +1,13 @@
 import { useCallback } from 'react'
 import { DAYS } from '../data/workouts'
 import { useWorkoutHistory } from '../hooks/useWorkoutHistory'
+import { formatDate } from '../utils/formatDate'
 import VolumeChart from './VolumeChart'
 
 export default function HistoryView({ accent }) {
-  const { history, getHistoryForDay, getWeekCount } = useWorkoutHistory()
+  const { history, getHistoryForDay, getWeekCount, getStreak } = useWorkoutHistory()
+
+  const streak = getStreak()
 
   const weekCount = getWeekCount()
   const totalWorkouts = history.length
@@ -75,6 +78,15 @@ export default function HistoryView({ accent }) {
             <div className="history__stat-number" style={{ color: accent }}>{weekCount}</div>
             <div className="history__stat-desc">This week</div>
           </div>
+          {streak > 0 && (
+            <div className="history__stat-box">
+              <div className="history__stat-number" style={{ color: accent }}>
+                <span className="history__streak-flame" aria-hidden="true">&#x1F525;</span>
+                {streak}
+              </div>
+              <div className="history__stat-desc">Day streak</div>
+            </div>
+          )}
         </div>
 
         {/* Progressive overload dots */}
@@ -147,7 +159,3 @@ export default function HistoryView({ accent }) {
   )
 }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
