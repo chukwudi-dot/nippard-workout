@@ -45,7 +45,7 @@ const ExerciseCard = memo(function ExerciseCard({
           </div>
           <div className="exercise-card__rest">{ex.rest}</div>
           <button
-            onClick={e => { e.stopPropagation(); onDemo(ex) }}
+            onClick={e => { e.stopPropagation(); onDemo({ ...ex, name: displayName }) }}
             className="exercise-card__demo-btn"
             style={{ background: `${accent}18`, border: `1px solid ${accent}35`, color: accent }}
             aria-label={`Watch demo for ${displayName}`}

@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react'
-import { useWgerGif } from '../hooks/useWgerGif'
+
+function youtubeSearchUrl(name) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise form tutorial')}`
+}
+
+function nippardSearchUrl(name) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent('Jeff Nippard ' + name)}`
+}
 
 export default function DemoModal({ exercise, accent, onClose }) {
-  const { gifUrl, loading } = useWgerGif(exercise?.gifQuery, !!exercise)
   const modalRef = useRef(null)
 
   useEffect(() => {
@@ -67,41 +73,16 @@ export default function DemoModal({ exercise, accent, onClose }) {
           </button>
         </div>
 
-        {/* Image area */}
-        <div className="demo-modal__image-area">
-          {loading && (
-            <div className="demo-modal__loading">
-              <div className="demo-modal__loading-icon">&nbsp;&#x23F3;</div>
-              <div className="demo-modal__loading-text">Loading demo...</div>
-            </div>
-          )}
-          {!loading && gifUrl && (
-            <img
-              src={gifUrl}
-              alt={`${exercise.name} demonstration`}
-              className="demo-modal__image"
-            />
-          )}
-          {!loading && !gifUrl && (
-            <div className="demo-modal__fallback">
-              <div className="demo-modal__fallback-icon">&nbsp;&#x1F3CB;&#xFE0F;</div>
-              <p className="demo-modal__fallback-text">Image not available for this exercise</p>
-              <a
-                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' exercise form tutorial')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="demo-modal__youtube-btn"
-                style={{ background: accent }}
-              >
-                &#x25B6; Watch on YouTube
-              </a>
-            </div>
-          )}
+        {/* Muscle + Equipment badges */}
+        <div className="demo-modal__badges">
           <div
             className="demo-modal__muscle-badge"
             style={{ background: `${accent}20`, border: `1px solid ${accent}40`, color: accent }}
           >
             {exercise.muscle}
+          </div>
+          <div className="demo-modal__equip-badge">
+            {exercise.equipment}
           </div>
         </div>
 
@@ -114,14 +95,33 @@ export default function DemoModal({ exercise, accent, onClose }) {
           >
             {exercise.cue}
           </div>
+        </div>
+
+        {/* Rest info */}
+        <div className="demo-modal__rest-info">
+          Rest: <strong>{exercise.rest}</strong>
+        </div>
+
+        {/* YouTube links */}
+        <div className="demo-modal__links">
           <a
-            href={`https://www.youtube.com/results?search_query=${encodeURIComponent('Jeff Nippard ' + exercise.name)}`}
+            href={youtubeSearchUrl(exercise.name)}
+            target="_blank"
+            rel="noreferrer"
+            className="demo-modal__youtube-btn"
+            style={{ background: accent, color: '#000' }}
+          >
+            <span className="demo-modal__play-icon">&#x25B6;</span>
+            Watch Form Tutorial
+          </a>
+          <a
+            href={nippardSearchUrl(exercise.name)}
             target="_blank"
             rel="noreferrer"
             className="demo-modal__search-link"
           >
             <span className="demo-modal__search-icon">&#x25B6;</span>
-            Search &ldquo;{exercise.name}&rdquo; on YouTube
+            Jeff Nippard &mdash; {exercise.name}
           </a>
         </div>
       </div>
