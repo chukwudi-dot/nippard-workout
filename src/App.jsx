@@ -5,24 +5,30 @@ import WorkoutView from './components/WorkoutView'
 import ScheduleView from './components/ScheduleView'
 import HistoryView from './components/HistoryView'
 import DemoModal from './components/DemoModal'
-
-const VIEWS = [
-  ['workout', 'Workout'],
-  ['schedule', 'This Week'],
-  ['history', 'History'],
-]
+import BottomNav from './components/BottomNav'
+import SessionTimer from './components/SessionTimer'
+import RestTimer from './components/RestTimer'
+import PRToast from './components/PRToast'
+import { useSessionTimer } from './hooks/useSessionTimer'
+import { useRestTimer } from './hooks/useRestTimer'
+import { usePersonalRecords } from './hooks/usePersonalRecords'
 
 export default function App() {
   const [activeId, setActiveId] = useState('upper-a')
   const [view, setView] = useState('workout')
   const [demoExercise, setDemoExercise] = useState(null)
 
+  const sessionTimer = useSessionTimer()
+  const restTimer = useRestTimer()
+  const { newPRs, checkAndSetPRs, dismissPRs } = usePersonalRecords()
+
   const day = useMemo(() => DAYS.find(d => d.id === activeId), [activeId])
 
   const switchDay = useCallback((id) => {
     setActiveId(id)
     setView('workout')
-  }, [])
+    sessionTimer.reset()
+  }, [sessionTimer])
 
   const openDemo = useCallback((exercise) => {
     setDemoExercise(exercise)
@@ -32,29 +38,25 @@ export default function App() {
     setDemoExercise(null)
   }, [])
 
+  const handleCheckPRs = useCallback((dayId, exercises, weights) => {
+    checkAndSetPRs(dayId, exercises, weights)
+  }, [checkAndSetPRs])
+
   return (
     <div className="app" style={{ '--accent': day.accent, '--accent-bg': day.bg }}>
       <DemoModal exercise={demoExercise} accent={day.accent} onClose={closeDemo} />
+      <PRToast prs={newPRs} onDismiss={dismissPRs} accent={day.accent} />
 
       <Header day={day} />
 
-      <main className="content">
-        {/* View Toggle */}
-        <div className="view-toggle" role="tablist" aria-label="App views">
-          {VIEWS.map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`view-toggle__btn ${view === v ? 'view-toggle__btn--active' : ''}`}
-              style={view === v ? { borderColor: day.accent, background: day.accent } : undefined}
-              role="tab"
-              aria-selected={view === v}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+      {/* Session Timer */}
+      <SessionTimer
+        formatted={sessionTimer.formatted}
+        isRunning={sessionTimer.isRunning}
+        accent={day.accent}
+      />
 
+      <main className="content">
         {view === 'schedule' && <ScheduleView onSelectDay={switchDay} />}
         {view === 'workout' && (
           <WorkoutView
@@ -62,10 +64,26 @@ export default function App() {
             activeId={activeId}
             onChangeDay={switchDay}
             onDemo={openDemo}
+            sessionTimer={sessionTimer}
+            restTimer={restTimer}
+            onCheckPRs={handleCheckPRs}
           />
         )}
         {view === 'history' && <HistoryView accent={day.accent} />}
       </main>
+
+      {/* Rest Timer */}
+      <RestTimer
+        remaining={restTimer.remaining}
+        progress={restTimer.progress}
+        isActive={restTimer.isActive}
+        onCancel={restTimer.cancel}
+        onAddTime={() => restTimer.addTime(30)}
+        accent={day.accent}
+      />
+
+      {/* Bottom Nav */}
+      <BottomNav activeView={view} onChangeView={setView} accent={day.accent} />
     </div>
   )
 }

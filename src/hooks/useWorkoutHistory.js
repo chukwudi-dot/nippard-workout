@@ -1,5 +1,4 @@
 import { useLocalStorage } from './useLocalStorage'
-import { loadJSON } from '../utils/storage'
 
 const HISTORY_KEY = 'history'
 const MAX_ENTRIES = 200
@@ -11,7 +10,7 @@ function todayStr() {
 export function useWorkoutHistory() {
   const [history, setHistory] = useLocalStorage(HISTORY_KEY, [])
 
-  const logWorkout = (dayId, dayLabel, exercises) => {
+  const logWorkout = (dayId, dayLabel, exercises, duration = 0, weights = []) => {
     const today = todayStr()
     const completedSets = collectCompletedSets(dayId, exercises.length)
 
@@ -19,11 +18,14 @@ export function useWorkoutHistory() {
       date: today,
       dayId,
       dayLabel,
+      duration,
       exercises: exercises.map((ex, i) => ({
         name: ex.name,
         setsCompleted: (completedSets[i] || []).length,
         setsTotal: ex.sets,
         reps: ex.reps,
+        weight: weights[i] || 0,
+        muscle: ex.muscle,
       })),
       completedAt: new Date().toISOString(),
     }

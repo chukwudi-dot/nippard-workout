@@ -1,5 +1,7 @@
+import { useCallback } from 'react'
 import { DAYS } from '../data/workouts'
 import { useWorkoutHistory } from '../hooks/useWorkoutHistory'
+import VolumeChart from './VolumeChart'
 
 export default function HistoryView({ accent }) {
   const { history, getHistoryForDay, getWeekCount } = useWorkoutHistory()
@@ -7,7 +9,6 @@ export default function HistoryView({ accent }) {
   const weekCount = getWeekCount()
   const totalWorkouts = history.length
 
-  // Progressive overload: last 4 sessions per day type
   const overloadData = DAYS.map(d => {
     const dayHistory = getHistoryForDay(d.id).slice(0, 4)
     const dots = dayHistory.map(h => {
@@ -17,6 +18,34 @@ export default function HistoryView({ accent }) {
     })
     return { label: d.label, accent: d.accent, dots }
   })
+
+  const exportCSV = useCallback(() => {
+    if (history.length === 0) return
+    const rows = [['Date', 'Workout', 'Duration (min)', 'Exercise', 'Sets Done', 'Sets Total', 'Reps', 'Weight (lbs)', 'Muscle']]
+    history.forEach(h => {
+      h.exercises.forEach(ex => {
+        rows.push([
+          h.date,
+          h.dayLabel,
+          h.duration ? Math.round(h.duration / 60) : '',
+          ex.name,
+          ex.setsCompleted,
+          ex.setsTotal,
+          ex.reps,
+          ex.weight || '',
+          ex.muscle || '',
+        ])
+      })
+    })
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `nippard-workout-log-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [history])
 
   if (history.length === 0) {
     return (
@@ -73,6 +102,18 @@ export default function HistoryView({ accent }) {
         </div>
       </div>
 
+      {/* Volume Chart */}
+      <VolumeChart history={history} accent={accent} />
+
+      {/* Export */}
+      <button
+        className="history__export-btn"
+        style={{ color: accent, borderColor: `${accent}30` }}
+        onClick={exportCSV}
+      >
+        Export CSV
+      </button>
+
       {/* Workout log */}
       <p className="history__log-label">Recent Workouts</p>
       {history.slice(0, 20).map((h, i) => {
@@ -81,6 +122,7 @@ export default function HistoryView({ accent }) {
         const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0
         const dayData = DAYS.find(d => d.id === h.dayId)
         const color = dayData?.accent || accent
+        const durationMin = h.duration ? Math.round(h.duration / 60) : null
 
         return (
           <div key={i} className="history__entry">
@@ -94,8 +136,9 @@ export default function HistoryView({ accent }) {
                 style={{ width: `${pct}%`, background: color }}
               />
             </div>
-            <div className="history__entry-pct">
-              {doneSets}/{totalSets} sets &middot; {pct}%
+            <div className="history__entry-meta">
+              <span>{doneSets}/{totalSets} sets &middot; {pct}%</span>
+              {durationMin && <span>{durationMin} min</span>}
             </div>
           </div>
         )

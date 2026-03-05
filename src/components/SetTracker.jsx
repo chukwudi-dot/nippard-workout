@@ -1,7 +1,17 @@
 import { useSetTracker } from '../hooks/useSetTracker'
+import { vibrate, PATTERNS } from '../utils/haptics'
 
-export default function SetTracker({ dayId, exerciseIndex, sets, accent }) {
+export default function SetTracker({ dayId, exerciseIndex, sets, accent, onSetComplete }) {
   const { done, toggle, allDone } = useSetTracker(dayId, exerciseIndex, sets)
+
+  const handleToggle = (i) => {
+    const wasComplete = done.includes(i)
+    toggle(i)
+    if (!wasComplete) {
+      vibrate(done.length + 1 === sets ? PATTERNS.allSetsComplete : PATTERNS.setComplete)
+      onSetComplete?.()
+    }
+  }
 
   return (
     <div>
@@ -10,7 +20,7 @@ export default function SetTracker({ dayId, exerciseIndex, sets, accent }) {
         {Array.from({ length: sets }).map((_, i) => (
           <button
             key={i}
-            onClick={e => { e.stopPropagation(); toggle(i) }}
+            onClick={e => { e.stopPropagation(); handleToggle(i) }}
             className={`set-tracker__btn ${done.includes(i) ? 'set-tracker__btn--done' : ''}`}
             style={done.includes(i) ? { borderColor: accent, background: accent } : undefined}
             aria-label={`Set ${i + 1} of ${sets}, ${done.includes(i) ? 'completed' : 'not completed'}`}
