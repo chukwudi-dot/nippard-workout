@@ -14,7 +14,7 @@ import { useRestTimer } from './hooks/useRestTimer'
 import { usePersonalRecords } from './hooks/usePersonalRecords'
 
 export default function App() {
-  const [activeId, setActiveId] = useState('upper-a')
+  const [activeId, setActiveId] = useState('push')
   const [view, setView] = useState('workout')
   const [demoExercise, setDemoExercise] = useState(null)
 
